@@ -1,5 +1,5 @@
 ---
-title: 'Laboratorio 1: importación de archivos'
+title: 'Laboratorio 1: Extraccion de archivos'
 author: "Cruz del Cid"
 date: "2022-08-03"
 output: rmarkdown::github_document
@@ -7,24 +7,80 @@ output: rmarkdown::github_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(readxl)
+library(readr)
+library(tidyverse)
+library(tidytext)
+
 ```
 
-## R Markdown
+## Problema 1
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+Ha sido contratado para trabajar en una consultoría a una embotelladora nacional. La
+embotelladora se encarga de distribuir su producto a distintos clientes, utilizando diferentes
+equipos de transporte y pilotos.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+```{r unificacion}
 
-```{r cars}
-summary(cars)
+read_add <- function(file_name){ 
+  x = read_xlsx(file_name) 
+  x$Fecha <- c(substr(file_name, star=1, stop=7))
+  return(x)
+}
+
+
+files <- list.files(pattern = "*.xlsx")
+
+tablas <- lapply(files, read_add) %>% bind_rows()
+
+tablas <- tablas[c("COD_VIAJE", "CLIENTE", "UBICACION", 
+         "CANTIDAD", "PILOTO", "Q", "CREDITO", 
+         "UNIDAD", "Fecha")]
+
+
+write_excel_csv2(tablas, "tablas.csv", delim = ",")
+
+str(tablas)
+
 ```
 
-## Including Plots
+## Problema 2 
 
-You can also embed plots, for example:
+Utilizando la función lapply, encuentre la moda de cada vector de una lista de por lo menos 3
+vectores.
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r modas}
+generate_vector <- function(x){ return(
+  c(sample(1:10, size = 20, replace = TRUE))
+  )
+}
+
+Mode <- function(x) {
+  ux <- unique(x)
+  return(ux[which.max(tabulate(match(x, ux)))])
+}
+
+
+lista <- lapply(1:3, generate_vector)
+lista
+
+modas <- lapply(lista, Mode)
+modas
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## Problema 3 
+
+A. Descargue de la página web de la SAT el aechivo de Parque Vehicular de Enero 2019.
+B. Leer el archivo en R. (Nota: usar read_delim() del paquete readr)
+
+```{r lectura}
+
+
+
+parque_vehicular <- read_delim("INE_PARQUE_VEHICULAR_080219.txt", delim = "|")
+
+head(parque_vehicular)
+
+
+```
