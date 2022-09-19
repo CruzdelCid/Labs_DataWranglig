@@ -51,7 +51,7 @@ paste0("Mis preguntas a resolver son: ",paste0(preguntas,collapse = ", "))
 
     Contraparte
 
-    -   df %\>% str()
+    -   glimpse()
     -   df %\>% select(a, b)
     -   df \<- df %\> rename(old_name = ‘new_name’)
     -   df %\>% filter(varible == “valor”)
