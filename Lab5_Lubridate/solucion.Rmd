@@ -1,0 +1,66 @@
+---
+title: "Lab 4 Lubridate"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(lubridate)
+library(nycflights13)
+library(tidyverse)
+library(readxl)
+library(stringr)
+
+```
+
+## Parte 1: Predecir un eclipse solar
+
+En tiempo de Norte América, el eclipse total inició el 21 de agosto del 2017 a las 18:26:40.
+
+
+Este mismo evento, sucederá un Saros después.
+Un Saros equivale a 223 Synodic Months
+Un Synodic Month equivale a 29 días con 12 horas, con 44 minutos y 3 segundos.
+
+
+Con esta información, predecir el siguiente eclipse solar.
+
+```{r cars, warning=FALSE}
+eclipse <- ymd_hms("2017/08/21 18:26:40")
+eclipse
+
+synodic <- ddays(x=29) + dhours(x= 12) + 
+  dminutes(x=44) + dseconds(x=3)
+synodic
+
+saros <- 223 * synodic 
+saros 
+
+nuevo_eclipse <- eclipse + saros
+nuevo_eclipse
+
+```
+
+## Parte 2: Agrupaciones y operaciones con fechas
+```{r data, include=FALSE}
+data <- read_xlsx("data.xlsx")
+names(data) <- c("fecha_creacion", "hora_creacion", "caller_id", "cod", "email",
+                 "sms", "call", "fecha_final", "hora_final")
+
+```
+
+
+### ¿En qué meses existe una mayor cantidad de llamadas por código?
+
+```{r}
+# data$fecha_creacion <- gsub("-","/",data$fecha_creacion)
+# data$fecha_creacion <- as.Date.numeric(data$fecha_creacion)
+date <- as.numeric(data$fecha_creacion[1])
+day(as.Date(date, origin ="1899-12-30"))
+
+# Hacer un lapply 
+
+date2 <- as.numeric(data$fecha_creacion[1])
+as.Date(date, origin ="1900-01-01")
+
+```
