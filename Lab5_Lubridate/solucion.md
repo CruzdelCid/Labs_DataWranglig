@@ -40,3 +40,406 @@ nuevo_eclipse
 ```
 
     ## [1] "2035-09-02 02:09:49 UTC"
+
+## Parte 2: Agrupaciones y operaciones con fechas
+
+Preparacion de fechas de creacion
+
+``` r
+data <- read_xlsx("data.xlsx")
+names(data) <- c("fecha_creacion", "hora_creacion", "caller_id", "cod", "email",
+                 "sms", "call", "fecha_final", "hora_final")
+
+data <- data %>%
+    mutate(fechaC1 = as.Date(as.numeric(fecha_creacion), origin ="1899-12-30"))
+```
+
+    ## Warning in as.Date(as.numeric(fecha_creacion), origin = "1899-12-30"): NAs
+    ## introducidos por coerción
+
+``` r
+data <- data %>%
+    mutate(fechaC2 = dmy(fecha_creacion))
+```
+
+    ## Warning: 104237 failed to parse.
+
+``` r
+data <- data %>%
+    mutate(fecha = paste(fechaC1,fechaC2,sep=""))
+
+data <- data %>%
+    mutate(fecha = gsub("NA","",fecha))
+
+data <- data %>%
+    mutate(fecha = ymd(fecha))
+
+data <- data %>%
+    mutate(fecha_creacion = make_datetime(year(fecha),
+                                      month(fecha),
+                                      day(fecha),
+                                      hour(hora_creacion),
+                                      minute(hora_creacion), 
+                                      second(hora_creacion)))
+
+data <- data %>%
+  select(-c("fecha", "fechaC1", "fechaC2", "hora_creacion"))
+```
+
+Preparacion de fechas de finalizacion
+
+``` r
+data <- data %>%
+    mutate(fechaC1 = as.Date(as.numeric(fecha_final), origin ="1899-12-30"))
+```
+
+    ## Warning in as.Date(as.numeric(fecha_final), origin = "1899-12-30"): NAs
+    ## introducidos por coerción
+
+``` r
+data <- data %>%
+    mutate(fechaC2 = dmy(fecha_final))
+```
+
+    ## Warning: 104237 failed to parse.
+
+``` r
+data <- data %>%
+    mutate(fecha = paste(fechaC1,fechaC2,sep=""))
+
+data <- data %>%
+    mutate(fecha = gsub("NA","",fecha))
+
+data <- data %>%
+    mutate(fecha = ymd(fecha))
+
+data <- data %>%
+    mutate(dia = day(hora_final))
+
+
+data <- data %>% 
+  mutate(fecha = case_when(dia == 1 ~ fecha + ddays(x=1),
+                           dia == 31 ~ fecha))
+
+
+data <- data %>%
+    mutate(fecha_final = make_datetime(year(fecha),
+                                      month(fecha),
+                                      day(fecha),
+                                      hour(hora_final),
+                                      minute(hora_final), 
+                                      second(hora_final)))
+
+data <- data %>%
+  select(-c("fecha", "fechaC1", "fechaC2", "hora_final", "dia"))
+```
+
+### ¿En qué meses existe una mayor cantidad de llamadas por código?
+
+``` r
+solucion <- data %>% 
+  mutate(mes = month(fecha_creacion)) %>% 
+  filter(call == 1) %>% 
+  select(mes, cod) %>% 
+  group_by(mes,cod) %>% 
+  summarise(cantidad = n()) %>%
+  arrange(desc(cantidad))
+```
+
+    ## `summarise()` has grouped output by 'mes'. You can override using the `.groups`
+    ## argument.
+
+``` r
+solucion
+```
+
+    ## # A tibble: 12 x 3
+    ## # Groups:   mes [12]
+    ##      mes cod                          cantidad
+    ##    <dbl> <chr>                           <int>
+    ##  1     3 Actualización de Información      497
+    ##  2     7 Actualización de Información      496
+    ##  3     5 Actualización de Información      494
+    ##  4    11 Actualización de Información      493
+    ##  5    10 Actualización de Información      487
+    ##  6    12 Actualización de Información      478
+    ##  7     8 Actualización de Información      474
+    ##  8     6 Actualización de Información      471
+    ##  9     1 Actualización de Información      465
+    ## 10     9 Actualización de Información      465
+    ## 11     4 Actualización de Información      462
+    ## 12     2 Actualización de Información      443
+
+### ¿Qué día de la semana es el más ocupado?
+
+``` r
+solucion <- data %>% 
+  mutate(dia = wday(fecha_creacion,label = TRUE, abbr = FALSE)) %>% 
+  group_by(dia) %>% 
+  summarise(cantidad = n()) %>% 
+  arrange(desc(cantidad)) %>% 
+  head(1)
+
+solucion
+```
+
+    ## # A tibble: 1 x 2
+    ##   dia     cantidad
+    ##   <ord>      <int>
+    ## 1 domingo    38254
+
+#### Domingo
+
+### ¿Qué mes es el más ocupado?
+
+``` r
+solucion <- data %>% 
+  mutate(mes = month(fecha_creacion)) %>% 
+  group_by(mes) %>% 
+  summarise(cantidad = n()) %>% 
+  arrange(desc(cantidad)) %>% 
+  head(1)
+
+solucion
+```
+
+    ## # A tibble: 1 x 2
+    ##     mes cantidad
+    ##   <dbl>    <int>
+    ## 1     3    22708
+
+#### Marzo
+
+### ¿Existe una concentración o estacionalidad en la cantidad de llamadas?
+
+``` r
+solucion <- data %>% 
+  filter(call == 1) %>% 
+  mutate(semana = floor_date(fecha_creacion, unit = "week")) %>% 
+  group_by(semana) %>% 
+  summarise(conteo = n())
+
+ggplot(solucion, aes(x=semana, y = conteo)) +
+  geom_line() + 
+  xlab("Semana del año") + 
+  ylab("Cantidad de llamadas") +
+  ggtitle("LLAMDAS POR SEMANA DEL AÑO")
+```
+
+![](solucion_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+
+#### No se ve niguna tendencia o concentracion en las llamadas
+
+### ¿Cuántos minutos dura la llamada promedio?
+
+``` r
+solucion <- data %>% 
+  filter(call == 1) %>% 
+  summarise(Duracion_Promedio = mean(difftime(fecha_final, fecha_creacion, "minutes")))
+  
+as.numeric(solucion$Duracion_Promedio, units = "mins")
+```
+
+    ## [1] 14.5579
+
+### Realice una tabla de frecuencias con el tiempo de llamada.
+
+``` r
+solucion <- data %>% 
+  filter(call == 1) %>% 
+  mutate(duracion = (fecha_final - fecha_creacion)) %>% 
+  select(duracion)
+
+solucion$duracion = round(as.numeric(solucion$duracion)/60)
+
+tabla  <- as.data.frame(table(cut(solucion$duracion,
+                                  seq(min(solucion$duracion),
+                                      max(solucion$duracion),
+                                      5)
+                                      ))) 
+tabla <- tabla %>% 
+  rename("Tiempo de llamadas en minutos" = Var1, 
+         "Cantidad de llamadas" = Freq)
+
+tabla
+```
+
+    ##   Tiempo de llamadas en minutos Cantidad de llamadas
+    ## 1                         (0,5]                  956
+    ## 2                        (5,10]                  959
+    ## 3                       (10,15]                  920
+    ## 4                       (15,20]                  914
+    ## 5                       (20,25]                  932
+    ## 6                       (25,30]                  823
+
+## Parte 3: Signo Zodiacal
+
+#### Crear una funcion que reciba la fecha de nacimiento y retorne el signo zodiacal
+
+``` r
+signo <- function(anno, mes, dia) {
+  
+  anno <- as.numeric(anno)
+  mes <- as.numeric(mes)
+  dia <- as.numeric(dia)
+  fecha <- make_date(anno, mes, dia)
+
+  if (is.na(fecha)){
+    return("Fecha invalida")
+  }
+
+  if (fecha <= make_date(anno, 1, 20)){
+    return("Capricornio")
+  } 
+  else if (fecha <= make_date(anno, 2, 18)) {
+    return("Acuario")
+  } 
+  else if (fecha <= make_date(anno, 3, 20)) {
+    return("Picis")
+  } 
+  else if (fecha <= make_date(anno, 4, 20)) {
+    return("Aries")
+  }
+  else if (fecha <= make_date(anno, 5, 21)) {
+    return("Tauro")
+  }
+  else if (fecha <= make_date(anno, 6, 21)) {
+    return("Geminis")
+  }
+  else if (fecha <= make_date(anno, 7, 22)) {
+    return("Cancer")
+  }
+  else if (fecha <= make_date(anno, 8, 23)) {
+    return("Leo")
+  }
+  else if (fecha <= make_date(anno, 9, 23)) {
+    return("Virgo")
+  }
+  else if (fecha <= make_date(anno, 10, 23)) {
+    return("Libra")
+  }
+  else if (fecha <= make_date(anno, 11, 22)) {
+    return("Escorpion")
+  }
+  else if (fecha <= make_date(anno, 12, 21)) {
+    return("Sagitario")
+  } 
+  else if (fecha >= make_date(anno, 12, 22)) {
+    return("Capricornio")
+  }
+}
+
+
+
+
+# Ejemplo
+
+signo(anno = 2002, mes = 10, dia = 20)
+```
+
+    ## [1] "Libra"
+
+## Parte 4: Flights
+
+### Añadir cuatro columnas más en formato hora y minuto
+
+para: dep_time, arr_time, sched_dep_time, sched_arr_time
+
+``` r
+# se elimina los NA 
+flights <- flights %>% 
+  filter(!is.na(dep_time)) %>% 
+  filter(!is.na(arr_time)) %>% 
+  filter(!is.na(sched_dep_time)) %>% 
+  filter(!is.na(sched_arr_time))
+
+# Creacion de los nuevas columnas como caracteres
+flights <- flights %>% 
+  mutate(dep_time2 = as.character(dep_time),
+         arr_time2 = as.character(arr_time), 
+         sched_dep_time2 = as.character(sched_dep_time),
+         sched_arr_time2 = as.character(sched_arr_time))
+
+         
+# se cambia el formato a cada columna para que parezca hora 
+flights <- flights %>% 
+  mutate(dep_time2 = case_when(nchar(dep_time2) == 1 ~ paste("00", paste("0",dep_time2,sep=""), sep = ":"),
+                               nchar(dep_time2) == 2 ~ paste("00", dep_time2, sep = ":"),
+                               nchar(dep_time2) == 3 ~ paste(substr(dep_time2, 1, 1)
+                                                                ,substr(dep_time2, 2, 3), sep = ":"),
+                               nchar(dep_time2) == 4 ~ paste(substr(dep_time2, 1, 2)
+                                                                ,substr(dep_time2, 3, 4), sep = ":")
+                               ))
+
+flights <- flights %>% 
+  mutate(arr_time2 = case_when(nchar(arr_time2) == 1 ~ paste("00", paste("0",arr_time2,sep=""), sep = ":"),
+                               nchar(arr_time2) == 2 ~ paste("00", arr_time2, sep = ":"),
+                               nchar(arr_time2) == 3 ~ paste(substr(arr_time2, 1, 1)
+                                                                ,substr(arr_time2, 2, 3), sep = ":"),
+                               nchar(arr_time2) == 4 ~ paste(substr(arr_time2, 1, 2)
+                                                                ,substr(arr_time2, 3, 4), sep = ":")
+                               ))
+
+flights <- flights %>% 
+  mutate(sched_dep_time2 = case_when(nchar(sched_dep_time2) == 1 ~ paste("00", paste("0",sched_dep_time2,sep=""), sep = ":"),
+                               nchar(sched_dep_time2) == 2 ~ paste("00", sched_dep_time2, sep = ":"),
+                               nchar(sched_dep_time2) == 3 ~ paste(substr(sched_dep_time2, 1, 1)
+                                                                ,substr(sched_dep_time2, 2, 3), sep = ":"),
+                               nchar(sched_dep_time2) == 4 ~ paste(substr(sched_dep_time2, 1, 2)
+                                                                ,substr(sched_dep_time2, 3, 4), sep = ":")
+                               ))
+
+
+flights <- flights %>% 
+  mutate(sched_arr_time2 = case_when(nchar(sched_arr_time2) == 1 ~ paste("00", paste("0",sched_arr_time2,sep=""), sep = ":"),
+                               nchar(sched_arr_time2) == 2 ~ paste("00", sched_arr_time2, sep = ":"),
+                               nchar(sched_arr_time2) == 3 ~ paste(substr(sched_arr_time2, 1, 1)
+                                                                ,substr(sched_arr_time2, 2, 3), sep = ":"),
+                               nchar(sched_arr_time2) == 4 ~ paste(substr(sched_arr_time2, 1, 2)
+                                                                ,substr(sched_arr_time2, 3, 4), sep = ":")
+                               ))
+
+# Se transforman a horas 
+flights <- flights %>% 
+  mutate(dep_time2 = hm(dep_time2),
+         arr_time2 = hm(arr_time2), 
+         sched_dep_time2 = hm(sched_dep_time2),
+         sched_arr_time2 = hm(sched_arr_time2))
+
+# desplegue de las horas
+flights %>% 
+  select(dep_time2, arr_time2, sched_dep_time2, sched_arr_time2) %>% 
+  head()
+```
+
+    ## # A tibble: 6 x 4
+    ##   dep_time2 arr_time2 sched_dep_time2 sched_arr_time2
+    ##   <Period>  <Period>  <Period>        <Period>       
+    ## 1 5H 17M 0S 8H 30M 0S 5H 15M 0S       8H 19M 0S      
+    ## 2 5H 33M 0S 8H 50M 0S 5H 29M 0S       8H 30M 0S      
+    ## 3 5H 42M 0S 9H 23M 0S 5H 40M 0S       8H 50M 0S      
+    ## 4 5H 44M 0S 10H 4M 0S 5H 45M 0S       10H 22M 0S     
+    ## 5 5H 54M 0S 8H 12M 0S 6H 0M 0S        8H 37M 0S      
+    ## 6 5H 54M 0S 7H 40M 0S 5H 58M 0S       7H 28M 0S
+
+### Encuentre el delay total que existe en cada vuelo. El delay total se puede encontrar sumando el delay de la salida y el delay de la entrada.
+
+``` r
+flights <- flights %>% 
+  mutate(delay_total = (dep_time2 - sched_dep_time2) + (arr_time2 - sched_arr_time2))
+
+
+flights %>% 
+  select(dep_time2, arr_time2, sched_dep_time2, sched_arr_time2, delay_total) %>% 
+  head()
+```
+
+    ## # A tibble: 6 x 5
+    ##   dep_time2 arr_time2 sched_dep_time2 sched_arr_time2 delay_total
+    ##   <Period>  <Period>  <Period>        <Period>        <Period>   
+    ## 1 5H 17M 0S 8H 30M 0S 5H 15M 0S       8H 19M 0S       13M 0S     
+    ## 2 5H 33M 0S 8H 50M 0S 5H 29M 0S       8H 30M 0S       24M 0S     
+    ## 3 5H 42M 0S 9H 23M 0S 5H 40M 0S       8H 50M 0S       1H -25M 0S 
+    ## 4 5H 44M 0S 10H 4M 0S 5H 45M 0S       10H 22M 0S      -19M 0S    
+    ## 5 5H 54M 0S 8H 12M 0S 6H 0M 0S        8H 37M 0S       -1H 29M 0S 
+    ## 6 5H 54M 0S 7H 40M 0S 5H 58M 0S       7H 28M 0S       8M 0S
