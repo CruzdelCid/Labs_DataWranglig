@@ -228,7 +228,22 @@ ggplot(solucion, aes(x=semana, y = conteo)) +
 
 ![](solucion_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
-#### No se ve niguna tendencia o concentracion en las llamadas
+``` r
+# Prueba estadistica de estacionalidad 
+
+sol <- kpss.test(solucion$conteo, null ="Trend")
+```
+
+    ## Warning in kpss.test(solucion$conteo, null = "Trend"): p-value greater than
+    ## printed p-value
+
+``` r
+sol$p.value > 0.05
+```
+
+    ## [1] TRUE
+
+#### Según la prueba estadística, Sí existe estacionalidad den las llamadas por semana
 
 ### ¿Cuántos minutos dura la llamada promedio?
 

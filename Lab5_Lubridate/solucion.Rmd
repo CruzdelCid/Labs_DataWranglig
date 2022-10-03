@@ -11,6 +11,7 @@ library(tidyverse)
 library(readxl)
 library(stringr)
 library(ggplot2)
+library(tseries)
 ```
 
 ## Parte 1: Predecir un eclipse solar
@@ -183,9 +184,17 @@ ggplot(solucion, aes(x=semana, y = conteo)) +
 
 
 ```
+```{r}
+
+# Prueba estadistica de estacionalidad 
+
+sol <- kpss.test(solucion$conteo, null ="Trend")
+sol$p.value > 0.05
+
+```
 
 
-#### No se ve niguna tendencia o concentracion en las llamadas
+#### Según la prueba estadística, Sí existe estacionalidad den las llamadas por semana
 
 
 ### ¿Cuántos minutos dura la llamada promedio?
