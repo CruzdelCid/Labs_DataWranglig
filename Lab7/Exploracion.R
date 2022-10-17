@@ -85,8 +85,35 @@ data %>%
   select(Costo_total, Costo_fijo, Costo_directo) %>% 
   mutate(xx=Costo_fijo + Costo_directo) %>% 
   filter(Costo_total != (xx))
-  
 
+
+
+n <- names(data)
+
+n[18] <- "r1"
+n[19] <- "r2"
+n[20] <- "r3"
+n[21] <- "r4"
+n[22] <- "r5"
+n
+
+names(data) <- n
+
+
+data <- data %>% 
+  mutate(tiempo = case_when(r1 == "x" ~ 17, 
+                            r2 == "x" ~ 37, 
+                            r3 == "x" ~ 60, 
+                            r4 == "x" ~ 97, 
+                            r5 == "x" ~ 120))
+"
+data <- data %>% 
+  mutate(tiempo = case_when(5-30, 
+                            30-45  
+                            45-75
+                            75-120
+                            120+ 
+"
 
 
 #####Analisis explorativo#####

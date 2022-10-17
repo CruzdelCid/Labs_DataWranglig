@@ -6,6 +6,9 @@ library(highcharter)
 library(plotly)
 library(resumeRdesc) 
 
+# Margen operativo
+sum(data$factura)
+
 
 # Margen operativo 2017 
 data <-data 
@@ -127,41 +130,68 @@ fig
 # Cuanto aumentaron los costos
 total = nrow(data)
 
-ganancia <- data %>% 
-  summarise(promedio = avg())
+costo_promedio <- data %>% 
+  summarise(promedio = mean(Costo_directo))
+
+costo_promedio 
+
+perdida <- (margen_2017-margen_2018) / total
+
+perdida # aumento de costos por venta
+
+nuevo_costo <- costo_promedio + perdida
+
+nuevo_costo
+
+round(perdida/costo_promedio*100,2) # aumento de aproximadamente 9% 
 
 
+# Objetivo 
+objetivo <- margen_2018 * 1.10 - margen_2018
+objetivo
 
+margen_2018 * 1.10
 
 # Cantidad de vehiculos 
 
-data %>% 
+res <- data %>% 
   group_by(Fecha, Vehiculo)%>% 
   summarise(n = n()) %>% 
   ungroup() %>%
   group_by(Vehiculo) %>%
   summarise(Promedio_Diario = mean(n))
 
-# cuanto carros 
+t_promedio <- data %>% 
+  summarise(n=mean(tiempo))
 
+res <- res %>% 
+  mutate(tiempo = Promedio_Diario * t_promedio$n)
 
+minutos <- 480
 
-# cuanto me cuestan - inversion
+res <- res %>% 
+  mutate(vehiculos = tiempo/minutos)
 
+# se compraron 25 camiones
+# 2 motos 
+# 78 pickups
 
 
 # cuanto gasto en mantenimiento
-
-
+perdida
 
 
 # Cuantos debemos alquilar
+# la mitad de automoviles
 
 
 
 
 # Costo de alquiler
+# Aproximadamente 11 dolares al día
 
+
+objetivo / total 
 
 
 # Tabla de precios 
